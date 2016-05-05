@@ -17,8 +17,8 @@
 
 #>
 
-[void] [System.Reflection.Assembly]::LoadWithPartialName("System.Drawing") 
-[void] [System.Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms") 
+[void] [System.Reflection.Assembly]::LoadWithPartialName('System.Drawing') 
+[void] [System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms') 
 
 
 #######################
@@ -34,11 +34,11 @@ function Get-Folders
     $ScriptStore = $args[0]
     $FileType = $Args[1]
 
-	$AllItems = Get-ChildItem -Path $ScriptStore -Include $FileType -Recurse | Select Fullname
+	$AllItems = Get-ChildItem -Path $ScriptStore -Include $FileType -Recurse | Select-Object Fullname
 
 	Foreach ($item in $AllItems) 
     {
-        $Item.FullName = ($Item.FullName).Replace($ScriptStore,"")
+        $Item.FullName = ($Item.FullName).Replace($ScriptStore,'')
 	}
 	return $AllItems
 }
@@ -49,9 +49,9 @@ function Get-Folders
 # the application are
 # defined here
 ########################
-$FolderLocation = "<SourceFolder>"
-$ScriptSource = Get-Folders $FolderLocation "*.ps1"
-$ModuleSource = Get-Folders $FolderLocation "*.psm1"
+$FolderLocation = '<SourceFolder>'
+$ScriptSource = Get-Folders $FolderLocation '*.ps1'
+$ModuleSource = Get-Folders $FolderLocation '*.psm1'
 
 ###########################################################
 #
@@ -59,19 +59,19 @@ $ModuleSource = Get-Folders $FolderLocation "*.psm1"
 #
 ###########################################################
 $objForm = New-Object System.Windows.Forms.Form 
-$objForm.Text = "Script Selection Form"
+$objForm.Text = 'Script Selection Form'
 $objForm.Size = New-Object System.Drawing.Size(500,300) 
-$objForm.StartPosition = "CenterScreen"
+$objForm.StartPosition = 'CenterScreen'
 
 $objForm.KeyPreview = $True
 $objForm.Add_KeyDown({
-    if ($_.KeyCode -eq "Enter") 
+    if ($_.KeyCode -eq 'Enter') 
     {
         $x=$objTextBox.Text;$objForm.Close()
     }
 })
 $objForm.Add_KeyDown({
-    if ($_.KeyCode -eq "Escape") 
+    if ($_.KeyCode -eq 'Escape') 
     {
         $objForm.Close()
     }
@@ -84,7 +84,7 @@ $objForm.Add_KeyDown({
 ##############################
 
 $ScriptComboBox = New-Object System.Windows.Forms.ComboBox
-$ScriptComboBox.DropDownStyle = "DropDownList"
+$ScriptComboBox.DropDownStyle = 'DropDownList'
 $ScriptComboBox.Location = New-Object System.Drawing.Size(40,40)
 $ScriptComboBox.Size = New-Object System.Drawing.Size(400,20)
 foreach($file in $ScriptSource) 
@@ -96,7 +96,7 @@ $ScriptComboBox.Add_SelectedIndexChanged({
 })
 
 $ModuleComboBox = New-Object System.Windows.Forms.ComboBox
-$ModuleComboBox.DropDownStyle = "DropDownList"
+$ModuleComboBox.DropDownStyle = 'DropDownList'
 $ModuleComboBox.Location = New-Object System.Drawing.Size(40,110)
 $ModuleComboBox.Size = New-Object System.Drawing.Size(400,20)
 foreach($file in $ModuleSource) 
@@ -105,15 +105,15 @@ foreach($file in $ModuleSource)
 }
 $ModuleComboBox.Add_SelectedIndexChanged({
     $CommandComboBox.Items.Clear()
-    if ((($ModuleComboBox.SelectedItem).split("."))[-1] -eq "psm1") {
+    if ((($ModuleComboBox.SelectedItem).split('.'))[-1] -eq 'psm1') {
         try 
         {
             Import-Module ($FolderLocation + $ModuleSource[$ModuleComboBox.SelectedIndex].FullName)
-            $module = ((($ModuleSource[$ModuleComboBox.SelectedIndex].FullName).Split("\"))[-1]).replace(".psm1","")
+            $module = ((($ModuleSource[$ModuleComboBox.SelectedIndex].FullName).Split('\'))[-1]).replace('.psm1','')
         }
         catch [System.Exception]
         {
-        Write-Error "Could not import module. Please ensure it is a valid module file."
+        Write-Error 'Could not import module. Please ensure it is a valid module file.'
         }
     }
     else
@@ -128,7 +128,7 @@ $ModuleComboBox.Add_SelectedIndexChanged({
 })
 
 $CommandComboBox = New-Object System.Windows.Forms.ComboBox
-$CommandComboBox.DropDownStyle = "DropDownList"
+$CommandComboBox.DropDownStyle = 'DropDownList'
 $CommandComboBox.Location = New-Object System.Drawing.Size(40,170)
 $CommandComboBox.Size = New-Object System.Drawing.Size(400,20)
 $CommandComboBox.Add_SelectedIndexChanged({
@@ -138,28 +138,28 @@ $CommandComboBox.Add_SelectedIndexChanged({
 $CancelButton = New-Object System.Windows.Forms.Button
 $CancelButton.Location = New-Object System.Drawing.Size(213,230)
 $CancelButton.Size = New-Object System.Drawing.Size(75,23)
-$CancelButton.Text = "Exit"
+$CancelButton.Text = 'Exit'
 $CancelButton.Add_Click({$objForm.Close()})
 
 $ScriptLabel = New-Object System.Windows.Forms.Label
 $ScriptLabel.Location = New-Object System.Drawing.Size(10,20) 
 $ScriptLabel.Size = New-Object System.Drawing.Size(400,20) 
-$ScriptLabel.Text = "Either select a script from the dropdown:"
+$ScriptLabel.Text = 'Either select a script from the dropdown:'
 
 $ModuleLabel = New-Object System.Windows.Forms.Label
 $ModuleLabel.Location = New-Object System.Drawing.Size(10,80) 
 $ModuleLabel.Size = New-Object System.Drawing.Size(400,20) 
-$ModuleLabel.Text = "Or select a module from the dropdown:"
+$ModuleLabel.Text = 'Or select a module from the dropdown:'
 
 $CommandLabel = New-Object System.Windows.Forms.Label
 $CommandLabel.Location = New-Object System.Drawing.Size(10,140) 
 $CommandLabel.Size = New-Object System.Drawing.Size(400,20) 
-$CommandLabel.Text = "Then select a command for that module from the dropdown:"
+$CommandLabel.Text = 'Then select a command for that module from the dropdown:'
 
 $SystemModuleCheckBox = New-Object System.Windows.Forms.CheckBox
 $SystemModuleCheckBox.Location = New-Object System.Drawing.Size(10,200)
 $SystemModuleCheckBox.Size = New-Object System.Drawing.Size(170,25)
-$SystemModuleCheckBox.Text = "Include System Modules?"
+$SystemModuleCheckBox.Text = 'Include System Modules?'
 $SystemModuleCheckBox.Add_CheckedChanged({
     if ($SystemModuleCheckBox.Checked) {
         Foreach ($module in (Get-Module -ListAvailable)) {
