@@ -17,6 +17,16 @@
 
 #>
 
+#######################
+# Some variables used throughout
+# the application are
+# defined here
+########################
+$FolderLocation = '<SourceFolder>'
+$ScriptSource = Get-Folders $FolderLocation '*.ps1'
+$ModuleSource = Get-Folders $FolderLocation '*.psm1'
+
+
 [void] [System.Reflection.Assembly]::LoadWithPartialName('System.Drawing') 
 [void] [System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms') 
 
@@ -42,16 +52,6 @@ function Get-Folders
 	}
 	return $AllItems
 }
-
-
-#######################
-# Some variables used throughout
-# the application are
-# defined here
-########################
-$FolderLocation = '<SourceFolder>'
-$ScriptSource = Get-Folders $FolderLocation '*.ps1'
-$ModuleSource = Get-Folders $FolderLocation '*.psm1'
 
 ###########################################################
 #
