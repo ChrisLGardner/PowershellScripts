@@ -106,8 +106,7 @@ function Get-TfsWorkItemDetail
         }
         catch
         {
-            Throw
-
+            Write-Error "No work item with ID: $Id found in the target instance ($Uri)"
         }
         Write-Output $jsondata
     }
@@ -855,5 +854,146 @@ function Get-TfsWorkItemQuery
         }
 
         Write-output $JsonData
+    }
+}
+
+
+function Add-TfsWorkItemHyperlink
+{
+    <#  
+        .SYNOPSIS
+            This function will add a hyperlink to a work item.
+
+        .DESCRIPTION
+            This function will add a hyperlink to a work item.
+
+        .PARAMETER WebSession
+            Web session object for the target TFS server.
+
+        .PARAMETER Project
+            The name of the project under which the team can be found
+
+        .PARAMETER Name
+            The name of the query to create.
+
+        .PARAMETER Uri
+            Uri of TFS serverm, including /DefaultCollection (or equivilent)
+
+        .PARAMETER Username
+            Username to connect to TFS with
+
+        .PARAMETER AccessToken
+            AccessToken for VSTS to connect with.
+
+        .PARAMETER UseDefaultCredentails
+            Switch to use the logged in users credentials for authenticating with TFS.
+
+        .EXAMPLE 
+            New-TfsWorkItemQuery -WebSession $session -Project 'Super Product' -Folder 'Shared Queries' -Name 'In Test' -Wiql $Wiql 
+
+            This will add a new query to the Shared Queries folder with the specified wiql using the specified web session.
+
+        .EXAMPLE
+            New-TfsTeamProjectDashboardWorkItemQuery -Project 'Super Product' -Folder 'Shared Queries' -Name 'In Test' -Wiql $WiqlString -Uri 'https://product.visualstudio.com/DefaultCollection' -Username 'MainUser' -AccessToken (Get-Content c:\accesstoken.txt | Out-String)
+
+            This will add a new query to the Shared Queries folder with the specified wiql on the target VSTS account using the provided creds.
+
+    #>
+    [cmdletbinding()]
+    param(
+        [Parameter(ParameterSetName='WebSession', Mandatory,ValueFromPipeline)]
+        [Microsoft.PowerShell.Commands.WebRequestSession]$WebSession,
+
+        [Parameter(Mandatory)]
+        [String]$Id,
+
+        [Parameter(Mandatory)]
+        [String]$Hyperlink,
+
+        [string]$Comment = "Added a hyperlink",
+
+        [Parameter(ParameterSetName='SingleConnection',Mandatory)]
+        [Parameter(ParameterSetName='LocalConnection',Mandatory)]
+        [String]$uri,
+
+        [Parameter(ParameterSetName='SingleConnection',Mandatory)]
+        [string]$Username,
+
+        [Parameter(ParameterSetName='SingleConnection',Mandatory)]
+        [string]$AccessToken,
+
+        [parameter(ParameterSetName='LocalConnection',Mandatory)]
+        [switch]$UseDefaultCredentials
+
+    )
+    
+    Process
+    {
+        $headers = @{'Content-Type'='application/json-patch+json';'accept'='api-version=2.2'}
+        $Parameters = @{}
+
+        #Use Hashtable to create param block for invoke-restmethod and splat it together
+        switch ($PsCmdlet.ParameterSetName) 
+        {
+            'SingleConnection'
+            {
+                $WebSession = Connect-TfsServer -Uri $uri -Username $Username -AccessToken $AccessToken
+                $Parameters.add('WebSession',$WebSession)
+                $Parameters.add('Headers',$headers)
+
+            }
+            'LocalConnection'
+            {
+                $WebSession = Connect-TfsServer -uri $Uri -UseDefaultCredentials
+                $Parameters.add('WebSession',$WebSession)
+                $Parameters.add('Headers',$headers)
+            }
+            'WebSession'
+            {
+                $Uri = $WebSession.uri
+                $Parameters.add('WebSession',$WebSession)
+                $Parameters.add('Headers',$headers)
+                #Connection details here from websession, no creds needed as already there
+            }
+        }
+
+        $WorkItem = Get-TfsWorkItemDetail -WebSession $WebSession -ID $Id
+
+        $JsonBody = @"
+[
+    {
+        "op": "test",
+        "path": "/rev",
+        "value": $($WorkItem.Rev)
+    },
+    {
+        "op": "add",
+        "path": "/fields/System.History",
+        "value": "$Comment"
+    },
+    {
+        "op": "add",
+        "path": "/relations/-",
+        "value": {
+            "rel": "Hyperlink",
+            "url": "$Hyperlink"
+        }
+    }
+]
+"@
+
+        $uri = "$Uri/_apis/wit/workitems/$id"
+        $Parameters.Add('Uri',$uri)
+
+        try
+        {
+            $JsonOutput = Invoke-RestMethod -Method Patch -Body $JsonBody @Parameters -ErrorAction Stop
+        }
+        catch
+        {
+            Write-Error "Failed to update work item $id."
+        }
+
+        Write-Output $JsonOutput
     }
 }
