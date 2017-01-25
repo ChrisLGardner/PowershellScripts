@@ -8,10 +8,7 @@ param
     [string]$Sheet,
 
     [Parameter(Mandatory)]
-    [string]$ParentIdColumn,
-
-    [Parameter(Mandatory)]
-    [string]$ChildIdColumn,
+    [string]$ProjectColumn,
 
     [Parameter(ParameterSetName='SingleConnection',Mandatory)]
     [String]$uri,
@@ -157,7 +154,15 @@ function Add-TfsWorkItemParentChildLink
         }
         catch
         {
-            Write-Error "Failed to update work item $ParentId."
+            $TempError = $_
+            if ($TempError.ErrorDetails.Message -match 'Already Exists')
+            {
+                Write-Warning "Link already exists"
+            }
+            else 
+            {
+                Write-Error "Failed to update work item $ParentId."
+            }
         }
 
         Write-Output $JsonOutput
@@ -413,4 +418,23 @@ function Connect-TfsServer
         
     } 
 
+}
+
+$session = Connect-TfsServer -Uri $uri -Username $Username -AccessToken $AccessToken
+
+$ExcelFile = Import-Xlsx -Path $Path -Sheet $Sheet
+
+foreach ($ExcelRow in $ExcelFile)
+{
+    $Body = @{Query="SELECT [System.Id] FROM WorkItems WHERE [Scrum2.CHDevProject] = '$($ExcelRow.$ProjectColumn)' AND [System.WorkItemType] = 'Feature'"} | ConvertTo-Json
+    $FeatureWorkItem = Invoke-RestMethod -Method Post -Uri "$($Session.uri)/_apis/wit/wiql?api-version=1.0" -Body $body -WebSession $session -Headers @{'content-type'='application/json'} | Select-Object -ExpandProperty WorkItems
+
+    $Body = @{Query="SELECT [System.Id] FROM WorkItems WHERE [Scrum2.CHDevProject] = '$($ExcelRow.$ProjectColumn)' AND [System.WorkItemType] <> 'Feature'"} | ConvertTo-Json
+    $WorkItemQuery = Invoke-RestMethod -Method Post -Uri "$($Session.uri)/_apis/wit/wiql?api-version=1.0" -Body $body -WebSession $session -Headers @{'content-type'='application/json'}
+
+    Foreach ($WorkItem in $WorkItemQuery.WorkItems)
+    {   
+        Write-Verbose -Verbose "Adding link to $($ExcelRow.$ProjectColumn)"
+        Add-TfsWorkItemParentChildLink -WebSession $session -ParentId $FeatureWorkItem.id -ChildId $WorkItem.id
+    }
 }
