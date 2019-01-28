@@ -17,10 +17,16 @@ Function New-FunctionFromType {
 
     process {
         if ($PSCmdlet.ParameterSetName -eq 'TypeName') {
-            $Properties = ($TypeName -as [Type]).GetMembers() | Where-Object { $_.MemberType -in 'Property', 'Field' -and $_.CanWrite }
+            $Properties = @(
+                ($TypeName -as [Type]).GetProperties() | Where-Object { $_.CanWrite }
+                ($TypeName -as [Type]).GetFields()     | Where-Object { -not $_.Attributes.HasFlag([System.Reflection.FieldAttributes]::InitOnly) }
+            )
         }
         else {
-            $Properties = $InputObject.GetMembers() | Where-Object { $_.MemberType -in 'Property', 'Field' -and $_.CanWrite }
+            $Properties = @(
+                $InputObject.GetProperties() | Where-Object { $_.CanWrite }
+                $InputObject.GetFields()     | Where-Object { -not $_.Attributes.HasFlag([System.Reflection.FieldAttributes]::InitOnly) }
+            )
         }
 
         $FunctionDefinition = @"
